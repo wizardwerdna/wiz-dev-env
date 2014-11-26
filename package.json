@@ -1,0 +1,25 @@
+{
+  "name": "wiz-dev-env",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "karma-jasmine": "^0.3.0",
+    "karma": "^0.12.25",
+    "karma-phantomjs-launcher": "^0.1.4",
+    "gulp-size": "^1.1.0",
+    "gulp-load-plugins": "^0.7.1",
+    "gulp": "^3.8.10",
+    "gulp-ruby-sass": "^0.7.1",
+    "browser-sync": "^1.7.1",
+    "gulp-autoprefixer": "^2.0.0"
+  }
+}
