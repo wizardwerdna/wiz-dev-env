@@ -383,3 +383,11 @@ gulp.task('serve', ['watch'], function() {
 
 Add some .jslint files.  I chose one for the main folder and another for the test folder
 
+```bash
+npm install karma-ng-html2js-preprocessor
+
+npm install --save-dev gulp-autoprefixer
+
+npm install --save-dev gulp-jshint jshint-stylish gulp-filter gulp-useref gulp-uglify gulp-csso gulp-if wiredep gulp-clean gulp-imagemin gulp-cache gulp-bower-files gulp-flatten 
+npm install --save gzippo express connect morgan
+```

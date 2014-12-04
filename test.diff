@@ -1,0 +1,222 @@
+diff --git a/README.md b/README.md
+index 9ce3b91..50b0b80 100644
+--- a/README.md
++++ b/README.md
+@@ -383,3 +383,11 @@ gulp.task('serve', ['watch'], function() {
+ 
+ Add some .jslint files.  I chose one for the main folder and another for the test folder
+ 
++```bash
++npm install karma-ng-html2js-preprocessor
++
++npm install --save-dev gulp-autoprefixer
++
++npm install --save-dev gulp-jshint jshint-stylish gulp-filter gulp-useref gulp-uglify gulp-csso gulp-if wiredep gulp-clean gulp-imagemin gulp-cache gulp-bower-files gulp-flatten 
++npm install --save gzippo express connect morgan
++```
+diff --git a/app/app.js b/app/app.js
+index 9dea9bd..c925344 100644
+--- a/app/app.js
++++ b/app/app.js
+@@ -1,4 +1,6 @@
++'use strict';
++
+ function result(){
+   return 1;
+-};
++}
+ 
+diff --git a/bower.json b/bower.json
+index a3412ac..28c2a9d 100644
+--- a/bower.json
++++ b/bower.json
+@@ -14,11 +14,11 @@
+     "tests"
+   ],
+   "dependencies": {
+-    "angular": "~1.3.3"
++    "angular": "~1.3.3",
++    "bootstrap-sass": "~3.0.2"
+   },
+   "devDependencies": {
+     "angular-mocks": "~1.3.3",
+-    "jquery": "~2.1.1",
+-    "bootstrap-sass": "~3.0.2"
++    "jquery": "~2.1.1"
+   }
+ }
+diff --git a/gulpfile.js b/gulpfile.js
+index 0a8b6f6..61ba733 100644
+--- a/gulpfile.js
++++ b/gulpfile.js
+@@ -1,6 +1,7 @@
+ 'use strict';
+ 
+ var gulp        = require('gulp');
++var wiredep     = require('wiredep').stream;
+ 
+ var $ = require('gulp-load-plugins')({
+   pattern: ['gulp-*', 'browser-sync']
+@@ -18,6 +19,32 @@ gulp.task('reload', function(){
+     .pipe(reload({stream: true}));
+ });
+ 
++gulp.task('scripts', function () {
++  return gulp.src(['app/**/*.js', '!app/bower_components/**'])
++      .pipe($.jshint('.jshintrc'))
++      .pipe($.jshint.reporter('jshint-stylish'))
++      .pipe($.size());
++});
++
++gulp.task('html', ['styles', 'scripts'], function () {
++  var jsFilter = $.filter('**/*.js');
++  var cssFilter = $.filter('**/*.css');
++  var assets = $.useref.assets();
++
++  return gulp.src('app/*.html')
++    .pipe(assets)
++    .pipe(jsFilter)
++    .pipe($.uglify())
++    .pipe(jsFilter.restore())
++    .pipe(cssFilter)
++    .pipe($.csso())
++    .pipe(cssFilter.restore())
++    .pipe(assets.restore())
++    .pipe($.useref())
++    .pipe(gulp.dest('dist'))
++    .pipe($.size());
++});
++
+ gulp.task('styles', function () {
+   return gulp.src('app/**/*.scss')
+     .pipe($.rubySass())
+@@ -27,11 +54,74 @@ gulp.task('styles', function () {
+     .pipe($.size());
+ });
+ 
+-gulp.task('watch', ['styles'] ,function () {
+-  gulp.watch(['app/**/*.{js,html,css}', '!app/bower_components/**'],['reload']);
++gulp.task('images', function () {
++  return gulp.src('app/images/**/*')
++    .pipe($.cache($.imagemin({
++      optimizationLevel: 3,
++      progressive: true,
++      interlaced: true
++    })))
++    .pipe(gulp.dest('dist/images'))
++    .pipe($.size());
++});
++
++gulp.task('clean', function () {
++  return gulp.src(['dist/styles', 'dist/scripts', 'dist/images', 'dist/fonts'],
++    { read: false }).pipe($.clean());
++});
++
++// Build
++gulp.task('build', ['html', 'images', 'fonts']);
++
++gulp.task('fonts', function () {
++  return $.bowerFiles()
++    .pipe($.filter([
++      '**/*.eot',
++      '**/*.svg',
++      '**/*.ttf',
++      '**/*.woff'
++    ]))
++    .pipe($.flatten())
++    .pipe(gulp.dest('dist/fonts'))
++    .pipe($.size());
++});
++
++gulp.task('wiredep', function () {
++  gulp.src('app/styles/*.scss')
++    .pipe(wiredep({
++      directory: 'app/bower_components',
++      ignorePath: 'app/bower_components/'
++    }))
++    .pipe(gulp.dest('app/styles'));
++
++  gulp.src('app/*.html')
++    .pipe(wiredep({
++      directory: 'app/bower_components',
++      ignorePath: 'app/'
++    }))
++    .pipe(gulp.dest('app'));
++});
++
++gulp.task('watch', ['scripts','styles'] ,function () {
++  gulp.watch(['app/**/*.js', '!app/bower_components/**'],['scripts', 'reload']);
++  gulp.watch(['app/**/*.{html,css}', '!app/bower_components/**'],['reload']);
+   gulp.watch('app/**/*.scss', ['styles']);
++  gulp.watch('app/scripts/**/*.js', ['scripts']);
++
++  gulp.watch('app/images/**/*', ['images']);
++  gulp.watch('bower.json', ['wiredep'])
++});
++
++// Static server .dist
++gulp.task('distserve', ['html'], function() {
++  $.browserSync({
++    server: {
++      baseDir: './dist'
++    }
++  });
+ });
+ 
++
+ // Static server
+ gulp.task('serve', ['watch'], function() {
+   $.browserSync({
+@@ -40,3 +130,7 @@ gulp.task('serve', ['watch'], function() {
+     }
+   });
+ });
++
++gulp.task('default', ['clean'], function () {
++    gulp.start('build');
++});
+diff --git a/karma.conf.js b/karma.conf.js
+index 8d6767e..581f8d0 100644
+--- a/karma.conf.js
++++ b/karma.conf.js
+@@ -34,6 +34,7 @@ module.exports = function(config) {
+     // preprocess matching files before serving them to the browser
+     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
+     preprocessors: {
++      '**/*.html': ['ng-html2js']
+     },
+ 
+ 
+diff --git a/package.json b/package.json
+index acc3dbb..bd4c008 100644
+--- a/package.json
++++ b/package.json
+@@ -20,6 +20,27 @@
+     "gulp": "^3.8.10",
+     "gulp-ruby-sass": "^0.7.1",
+     "browser-sync": "^1.7.1",
+-    "gulp-autoprefixer": "^2.0.0"
++    "gulp-autoprefixer": "^2.0.0",
++    "karma-ng-html2js-preprocessor": "^0.1.2",
++    "gulp-jshint": "^1.9.0",
++    "jshint-stylish": "^1.0.0",
++    "gulp-filter": "^1.0.2",
++    "gulp-useref": "^1.0.2",
++    "gulp-uglify": "^1.0.1",
++    "gulp-csso": "^0.2.9",
++    "gulp-if": "^1.2.5",
++    "wiredep": "^2.2.0",
++    "gulp-clean": "^0.3.1",
++    "imagemin": "^3.1.0",
++    "gulp-imagemin": "^2.0.0",
++    "gulp-cache": "^0.2.4",
++    "gulp-bower-files": "^0.2.7",
++    "gulp-flatten": "0.0.4"
++  },
++  "dependencies": {
++    "gzippo": "^0.2.0",
++    "express": "^4.10.4",
++    "connect": "^3.3.3",
++    "morgan": "^1.5.0"
+   }
+ }

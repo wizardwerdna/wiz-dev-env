@@ -4,4 +4,5 @@ node_modules
 app/bower_components
 .*.swo
 .*.swp
+dist
 
