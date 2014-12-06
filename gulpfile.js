@@ -70,7 +70,6 @@ gulp.task('clean', function () {
     { read: false }).pipe($.clean());
 });
 
-// Build
 gulp.task('build', ['html', 'images', 'fonts']);
 
 gulp.task('fonts', function () {
@@ -102,23 +101,14 @@ gulp.task('wiredep', function () {
     .pipe(gulp.dest('app'));
 });
 
-gulp.task('watch', ['scripts','styles'] ,function () {
+gulp.task('watch', ['wiredep', 'scripts','styles'] ,function () {
   gulp.watch(['app/**/*.js', '!app/bower_components/**'],['scripts', 'reload']);
   gulp.watch(['app/**/*.{html,css}', '!app/bower_components/**'],['reload']);
-  gulp.watch('app/**/*.scss', ['styles']);
+  gulp.watch(['app/**/*.scss', '!app/bower_components/**'], ['styles']);
   gulp.watch('app/scripts/**/*.js', ['scripts']);
 
   gulp.watch('app/images/**/*', ['images']);
-  gulp.watch('bower.json', ['wiredep'])
-});
-
-// Static server .dist
-gulp.task('distserve', ['html'], function() {
-  $.browserSync({
-    server: {
-      baseDir: './dist'
-    }
-  });
+  gulp.watch('bower.json', ['wiredep']);
 });
 
 
@@ -132,5 +122,5 @@ gulp.task('serve', ['watch'], function() {
 });
 
 gulp.task('default', ['clean'], function () {
-    gulp.start('build');
+  gulp.start('build');
 });
