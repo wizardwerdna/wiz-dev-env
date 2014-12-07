@@ -1,393 +1,172 @@
-# Building Wiz-Dev-Env
+# Wiz-Dev-Env
 
-This README describes how we built the development environment to facilitate 
-building AngularJS frontend applications with TDD and an
-automated build.  Leveraging free and open source tools, this environment can
-be leveraged to build applications using vi, emacs or any IDE.  Technologies
-used include:
+## Introduction
 
-  1. Node
-  1. Bower (for component management)
-  1. Angular 
-  1. Karma/Jasmine/PhantomJS/Angular-Mocks (for running tests)
-  1. Twitter Bootstrap/Sass (for CSS framework)
-  1. Gulp (for automated build)
+Wiz-Dev-Env is the node a node and angular based environment 
+used for my "Superheroic Katas" screencasts.  It is an excellent vehicle for
+building applications from scratch using TDD.  Scripts are provided for
+testing, serving a development browser, developing a production build with
+full minification of assets and deploying the app to Heroku.
 
-We will build:
+Underlying technologies include:
 
-  1. configuration files for npm, bower, karma
-  1. well-tested utility functions for building walking skeletons in AngularJS
-  1. gulp scripts:
-    a. minimize files, build out the css.
-    a. test server.
-    a. build a production version suitable for CI deployment on Heroku 
+  1. NodeJS
+  1. Bower
+  1. AngularJS
+  1. Karma/Jasmine/PhantomJS/Angular-Mocks
+  1. Twitter Bootstrap/Sass
+  1. Gulp and many many supporting plugins
 
+For a complete list, review the package.js and bower.json files.
 
-## Fundamentals
+## Setting up the Global Environment.
 
-The following will assume a working build of NodeJS/Npm.
+To use this environment, you will need to install nodeJS (with NPM), bower, 
+karma-cli and gulp.
+
+### Installing Git, NodeJS and NPM
+
+If you haven't already, install git.  Git can be obtained from various sources.
+
+If you haven't already, install nodejs and npm by using the files provided
+at the [nodejs.org website](http://nodejs.org/).
+
+### Installing Global Application Code
+From the command line, install bower, karama-cli and gulp
 
 ```bash
-#create directories
-mkdir wiz-dev-env wiz-dev-env/app wiz-dev-env/app/styles wiz-dev-env/lib wiz-dev-env/test
-
-#install bower
 sudo npm install -g bower
-
-#create npm package (select all defaults)
-yes "" | npm init
-
-#install karama/jasmine/phantomjs
-npm install karma karma-jasmine karma-phantomjs-launcher --save-dev
-
-#globally install karmaa-cli for convenience
 sudo npm install -g karma-cli
-
-#build karma configuration file (select defaults)
-yes "" | karma init
+sudo npm install -g gulp
 ```
 
-add the following text to karma.conf.js
+## Building a new project
+
+The following code should set up a new project in directory "foo."
 
 ```bash
-files: [
-  'app/*.js',
-  'test/*.js'
-],
-
-...
-# replace Chrome with PhantomJS
-browsers: ['PhantomJS'],
-
+git clone https://github.com/wizardwerdna/wiz-dev-env.git foo
+npm install && bower install
 ```
 
-We startup karma and write a test.
+## Karma configuration
+
+The karma configuration should run properly right out of the box, with
 
 ```bash
 karma start
 ```
 
-and then write a test to confirm we are working.
+which should autoload all code you place in the tests directory, and 
+all scripts placed in the app directory.  Angular-mocks (particularly the 
+`module` and `inject` helper functions) should be readily
+available from the tests.  
 
-in test/environment.js:
-```javascript
-'use strict';
-
-describe('Test a sure thing to confirm the environment is up', function() {
-  it('should pass', function(){
-    expect(1===1).toBe(true);
-  });
-});
-```
-
-and then write a test to confirm we are loading .js code from the app dir.
-
-adding to test/environment.js:
+### Template Cache
+You should be able to load any
+html files in the app directory, precompiled into js and available
+from the template cache, for example, with
 
 ```javascript
-describe('Test a sure thing to confirm the environment has access to app/', function() {
-  /* global result: true */
-  it('result should be 1', function(){
-    expect(result()).toBe(1);
+beforeEach(function(){
+  module('index.html');
+  inject(function(){
+    console.log($templateCache.get('index.html'));
   });
 });
 ```
 
-and make it pass with:
+### Utilty functions
 
-in app.js:
-```javascript
-function result(){
-  return 1;
-};
+Wiz-Dev-Env provides two utility functions for building a dynamic angular
+page object from html in the tests.
 
+  `ngFromHtml`(\<string\>[, \<initialization>\])
+
+returns an angularjs object compiled from \<string\> and applied to a 
+$rootScope.  The \$rootScope is initialized with a `vm` property set to the 
+optional \<initialization\> parameter.
+
+  `ngFrom`(\<template string\>[, \<initialization\>])
+
+returns an angularjs object compiled from \$templateCache(
+\<template string>\) and applied to a \$rootScope.  The \$rootScope is 
+initialized with a `vm` property set to the 
+optional \<initialization\> parameter.
+
+With index.html containing
+
+```html
+<div>
+  <div class="foo">{{1+1}}</div>
+</div>
 ```
 
-## Add Bower, AngularJS and testing tools
-
-```bash
-# create bower config file, all defaults
-yes "" | bower init
-bower install angular --save
-bower install angular-mocks jquery --save-dev
-```
-
-```javascript
-files: [
-  'bower_components/jquery/dist/jquery.js',
-  'bower_components/angular/angular.js',
-  'bower_components/angular-mocks/angular-mocks.js',
-  '**/*.html'
-  '*.js',
-  '!(bower_components)/**/*.js',
-  '../test/**/*.js'
-],
-```
-
-And then punch out tests and utility fuctions to load up ng objects from html,
-and from .html. 
-
-in test/environment.js
-```javascript
-'use strict';
-
-/* global describe: true */
-/* global it: true */
-/* global expect: true */
-/* global inject: true */
-/* global ngFrom: true */
-/* global ngFromHtml: true */
-
-describe('Test a sure thing to confirm the environment is up', function() {
-  it('should pass', function(){
-    expect(1===1).toBe(true);
-  });
-});
-
-describe('Test a sure thing to confirm the environment has access to app/', function() {
-  /* global result: true */
-  it('result should be 1', function(){
-    expect(result()).toBe(1);
-  });
-});
-
-describe('ngFromHtml()', function() {
-  it('should work for non-dynamic html', function(){
-    var html = '<div></div>';
-    var ng_html = '<div class="ng-scope"></div>';
-    var ng = ngFromHtml(html);
-    expect(ng.prop('outerHTML')).toBe(ng_html);
-  });
-
-  it('should work for simple dynamic html', function(){
-    var html = '<div>{{1+1}}</div>';
-    expect(ngFromHtml(html).text()).toBe('2');
-  });
-
-  it('should work for dynamic html with scope data', function() {
-    var html = '<div>{{vm.result}}</div>';
-    var vm = {result: 1};
-    expect(ngFromHtml(html, vm).text()).toBe('1');
-  });
-});
-
-describe('ngFrom()', function() {
-  it('should work for non-dynamic html', function() {
-    inject(function($templateCache){
-      $templateCache.put('foo.html', '<div></div>');
-    });
-    var ng_html = '<div class="ng-scope"></div>';
-    var ng = ngFrom('foo.html');
-    expect(ng.prop('outerHTML')).toBe(ng_html);
-  });
-
-  it('should work for dynamic html with scope data', function() {
-    var vm = {result: 1};
-    inject(function($templateCache){
-      $templateCache.put('foo.html', '<div>{{vm.result}}</div>');
-    });
-    expect(ngFrom('foo.html', vm).text()).toBe('1');
-  });
-
-});
-```
-
-and, the utility functions go in lib/ng-utilities.js
+the following tests illustrate how these functions can be used
 
 ```javascript
-'use strict';
-/* global inject: true */
-function ngFromHtml(html, vm){
-  var ng;
-  inject(function($rootScope, $compile){
-    $rootScope.vm = vm;
-    ng = $compile(html)($rootScope);
-    $rootScope.$digest();
-  });
-  return ng;
-}
+describe("Wiz-Dev-Env Utility Functions", function() {
 
-function ngFrom(templateName, vm){
-  var ng;
-  inject(function($templateCache){
-    ng = ngFromHtml($templateCache.get(templateName), vm);
+  it("ngFromHtml Example", function() {
+
+    var ng = ngFromHtml('<div><div class="foo">{{1+1}}</div></div>');
+    expect(ng.find('.foo').text()).toBe('2');
+
   });
-  return ng;
-}
+
+  it("ngFrom Example", function(){
+
+    module('index.html');
+    var ng = ngFrom('index.html');
+    expect(ng.find('.foo').text()).toBe('2');
+
+  });
+});	
 ```
 
-##Test Server 
+##Gulp scripts
 
-Despite 100% passing test coverage, we still want to run our code, at least,
-inside a browser and see how things are working.  To accomplish this, we will
-assume an index.html file that will load an SPA, together with all of its
-support and utility code.  That said, we will want to be able to concurrently
-run our test scaffold and make tweaks to the code, the html and the css and
-be able to have the served browser code reloaded and visible.  To do this, we
-will use gulp, browserSync, and Sass to preprocess and reload our code where
-needed.  (Later on, we will build a more comprehensive gulpfile for doing
-complete production rebuilds.)
-
-First, lets load up some tech, starting with gulp, a few gulp plugins,
-browserSync and sass.
-
-```bash
-npm install gulp browser-sync gulp-load-plugins gulp-ruby-sass gulp-size --save-dev
-```
-
-Now, lets build a small gulpfile to start a static browser loading our
-index.html and app.js, which will reload when the code is changed.
-
-```javascript
-'use strict';
-
-var gulp        = require('gulp');
-
-var $ = require('gulp-load-plugins')({
-  pattern: ['gulp-*', 'browser-sync']
-});
-
-var reload = $.browserSync.reload;
-
-gulp.task('reload', function(){
-  gulp.src(['app/**/*.{js,html,css}', '!app/bower_components/**'])
-    .pipe(reload({stream: true}));
-});
-
-gulp.task('watch', [] ,function () {
-  gulp.watch(['app/**/*.{js,html,css}', '!app/bower_components/**'],['reload']);
-});
-
-// Static server
-gulp.task('serve', ['watch'], function() {
-  $.browserSync({
-    server: {
-      baseDir: './app'
-    }
-  });
-});
-```
-
-You can start the server with `gulp serve`, but the result will be unsatisfactory,
-because the index file is incomplete.  Let's fill that out:
-
+Wiz-Dev-Env provides a number of useful scripts for development, typically
+assuming that you will be driving the application from an index.html files
+substantially as follows:
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title></title>
-  <link rel="stylesheet" href="styles/app.css" media="all">
-</head>
-<body ng-app>
-  <div>
-    <input ng-model="result">
-    <div class="output">{{result}}</div>
-  </div>
-  <script src="bower_components/angular/angular.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+ <meta charset="UTF-8">
+ <title></title>
+ <!-- build:css css/combined.css -->
+ <link rel="stylesheet" href="styles/app.css" media="all">
+ <!-- endbuild -->
+ </head>
+ <body ng-app>
+ 
+    {{1+1}}  
+ 
+ <!-- build:js scripts/combined.js -->
+ <!-- bower:js -->
+ <!-- endbower -->
+ <script src="app.js"></script>
+ <!-- endbuild -->
+ </body>
+ </html>
+
 ```
 
-Change some files, for example, changing the color in app/styles/app.css:
+The following gulp scripts will be helpful
 
-```css
-body {
-  background: orange;
-}
-```
+`gulp serve`
 
-## Dynamic css and Bootstrap
+This script will insert references to the bower_components where indicated,
+compile scss files to css, prepare images files for webwork and launch a server
+on app/index.html.  The script will set watches on .js, .html, .css, .scss,
+images files and bower.json, and will reload, rebuild and update the browser when appropriate.
 
-Lets load up twitter bootstrap
+`gulp`
+`gulp build`
 
-```bash
-bower install bootstrap-sass --save-dev 
-```
-
-and change app/styles/app.scss to read:
-
-```scss
-$icon-font-path: "/bower_components/bootstrap-sass/fonts/";
-
-@import '../bower_components/bootstrap-sass/lib/bootstrap';
-
-/* Put your CSS here */
-html, body {
-  margin: 20px;
-}
-
-body {
-    background: #fafafa;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    color: #333;
-}
-```
-
-and confirm that you have the technology running by executing
-
-```bash
-sass app/styles/app.scss app/styles/app.css
-```
-
-and confirm the changes are made when you run the server.  Now set up the 
-watcher and a gulp task to run rubySass by modifying the gulpfile to read:
-
-```javascript
-'use strict';
-
-var gulp        = require('gulp');
-
-var $ = require('gulp-load-plugins')({
-  pattern: ['gulp-*', 'browser-sync']
-});
-
-function handleError(err) {
-  console.error(err.toString());
-  this.emit('end');
-}
-
-var reload = $.browserSync.reload;
-
-gulp.task('reload', function(){
-  gulp.src(['app/**/*.{js,html,css}', '!app/bower_components/**'])
-    .pipe(reload({stream: true}));
-});
-
-gulp.task('styles', function () {
-  return gulp.src('app/**/*.scss')
-    .pipe($.rubySass())
-    .on('error', handleError)
-    // .pipe($.autoprefixer('last 1 version'))
-    .pipe(gulp.dest('app/'))
-    .pipe($.size());
-});
-
-gulp.task('watch', [] ,function () {
-  gulp.watch(['app/**/*.{js,html,css}', '!app/bower_components/**'],['reload']);
-  gulp.watch('app/**/*.scss', ['styles']);
-});
-
-// Static server
-gulp.task('serve', ['watch'], function() {
-  $.browserSync({
-    server: {
-      baseDir: './app'
-    }
-  });
-});
-```
-
-## Add some tools
-
-Add some .jslint files.  I chose one for the main folder and another for the test folder
-
-```bash
-npm install karma-ng-html2js-preprocessor
-
-npm install --save-dev gulp-autoprefixer
-
-npm install --save-dev gulp-jshint jshint-stylish gulp-filter gulp-useref gulp-uglify gulp-csso gulp-if wiredep gulp-clean gulp-imagemin gulp-cache gulp-bower-files gulp-flatten 
-npm install --save gzippo express connect morgan
-```
+This default script will minimize asset files as appropriate, concatenate 
+them into appropriate locations of a "dist" folder, modifying the index 
+files stored in dist to point to the correspondingly prepared assets.  
+The index.html in dist can be then be used with any static server or deployed
+with Heroku. 

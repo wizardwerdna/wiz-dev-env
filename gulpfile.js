@@ -105,7 +105,6 @@ gulp.task('watch', ['wiredep', 'scripts','styles'] ,function () {
   gulp.watch(['app/**/*.js', '!app/bower_components/**'],['scripts', 'reload']);
   gulp.watch(['app/**/*.{html,css}', '!app/bower_components/**'],['reload']);
   gulp.watch(['app/**/*.scss', '!app/bower_components/**'], ['styles']);
-  gulp.watch('app/scripts/**/*.js', ['scripts']);
 
   gulp.watch('app/images/**/*', ['images']);
   gulp.watch('bower.json', ['wiredep']);
