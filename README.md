@@ -163,6 +163,7 @@ on app/index.html.  The script will set watches on .js, .html, .css, .scss,
 images files and bower.json, and will reload, rebuild and update the browser when appropriate.
 
 `gulp`
+
 `gulp build`
 
 This default script will minimize asset files as appropriate, concatenate 
