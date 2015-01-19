@@ -2,6 +2,7 @@
 
 var gulp        = require('gulp');
 var wiredep     = require('wiredep').stream;
+var ngAnnotate  = require('gulp-ng-annotate');
 
 var $ = require('gulp-load-plugins')({
   pattern: ['gulp-*', 'browser-sync']
@@ -34,6 +35,7 @@ gulp.task('html', ['styles', 'scripts'], function () {
   return gulp.src('app/*.html')
     .pipe(assets)
     .pipe(jsFilter)
+    .pipe(ngAnnotate())
     .pipe($.uglify())
     .pipe(jsFilter.restore())
     .pipe(cssFilter)
@@ -70,7 +72,7 @@ gulp.task('clean', function () {
     { read: false }).pipe($.clean());
 });
 
-gulp.task('build', ['html', 'images', 'fonts']);
+gulp.task('build', ['wiredep', 'html', 'images', 'fonts']);
 
 gulp.task('fonts', function () {
   return $.bowerFiles()
@@ -110,6 +112,15 @@ gulp.task('watch', ['wiredep', 'scripts','styles'] ,function () {
   gulp.watch('bower.json', ['wiredep']);
 });
 
+
+// Static server
+gulp.task('serveDist', ['watch'], function() {
+  $.browserSync({
+    server: {
+      baseDir: './dist'
+    }
+  });
+});
 
 // Static server
 gulp.task('serve', ['watch'], function() {
